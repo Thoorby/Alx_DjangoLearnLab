@@ -12,15 +12,13 @@
 
 
 
-\# Retrieve Operation
+# Retrieve Operation
 
+>>> from bookshelf.models import Book
+>>> book = Book.objects.get(title="1984")
+>>> book.title, book.author, book.publication_year
+# ('1984', 'George Orwell', 1949)
 
-
->>> book = Book.objects.first()
-
->>> book.title, book.author, book.publication\_year
-
-\# ('1984', 'George Orwell', 1949)
 
 
 
@@ -40,17 +38,14 @@
 
 
 
-\# Delete Operation
+# Delete Operation
 
-
-
->>> book = Book.objects.first()
-
+>>> from bookshelf.models import Book
+>>> book = Book.objects.get(title="Nineteen Eighty-Four")
 >>> book.delete()
-
+# (1, {'bookshelf.Book': 1})
 >>> Book.objects.all()
-
-\# <QuerySet \[]>
+# <QuerySet []>
 
 
 
