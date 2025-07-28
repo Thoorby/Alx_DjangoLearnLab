@@ -19,4 +19,3 @@ urlpatterns = [
     path('librarian-dashboard/', librarian_view, name='librarian_dashboard'),
     path('member-dashboard/', member_view, name='member_dashboard'),
 ]
-
