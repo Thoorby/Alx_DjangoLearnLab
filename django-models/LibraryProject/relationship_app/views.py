@@ -1,9 +1,9 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth import login
 from django.contrib.auth.forms import UserCreationForm
-from django.views.generic.detail import DetailView
-from .models import Library
+from django.views.generic.detail import DetailView 
 from .models import Book
+from .models import Library  
 
 # View to list all books
 def list_books(request):
@@ -22,7 +22,7 @@ def register(request):
         form = UserCreationForm(request.POST)
         if form.is_valid():
             user = form.save()
-            login(request, user)  # Auto login after register
+            login(request, user)
             return redirect('list_books')
     else:
         form = UserCreationForm()
