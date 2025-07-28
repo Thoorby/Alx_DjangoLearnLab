@@ -24,15 +24,22 @@ class Book(models.Model):
     def __str__(self):
         return self.title
 
-# --- New UserProfile model for role-based access ---
+    class Meta:
+        permissions = [
+            ("can_add_book", "Can add book"),
+            ("can_change_book", "Can change book"),
+            ("can_delete_book", "Can delete book"),
+        ]
+
+ROLE_CHOICES = (
+    ('Admin', 'Admin'),
+    ('Librarian', 'Librarian'),
+    ('Member', 'Member'),
+)
+
 class UserProfile(models.Model):
-    ROLE_CHOICES = [
-        ('Admin', 'Admin'),
-        ('Librarian', 'Librarian'),
-        ('Member', 'Member'),
-    ]
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    role = models.CharField(max_length=10, choices=ROLE_CHOICES)
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES)
 
     def __str__(self):
         return f"{self.user.username} - {self.role}"
@@ -41,3 +48,7 @@ class UserProfile(models.Model):
 def create_user_profile(sender, instance, created, **kwargs):
     if created:
         UserProfile.objects.create(user=instance)
+
+@receiver(post_save, sender=User)
+def save_user_profile(sender, instance, **kwargs):
+    instance.userprofile.save()
