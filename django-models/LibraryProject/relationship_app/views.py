@@ -5,7 +5,7 @@ from django.contrib.auth import login
 from django.contrib.auth.forms import UserCreationForm
 from django.views.generic.detail import DetailView
 from .models import Library
-from .models import Book
+from bookshelf.models import Book
 from .forms import BookForm
 
 # Helper functions for role checks
