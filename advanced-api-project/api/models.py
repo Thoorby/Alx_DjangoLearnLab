@@ -1,64 +1,53 @@
 from django.db import models
-from datetime import datetime
+from django.contrib.auth.models import User
 
 class Author(models.Model):
-    """
-    Author model representing book authors.
-    
-    This model stores basic author information and serves as the parent
-    in a one-to-many relationship with the Book model. Each author can
-    have multiple books associated with them.
-    
-    Fields:
-        name (str): The full name of the author
-    """
-    name = models.CharField(
-        max_length=100,
-        help_text="Full name of the author"
-    )
-    
+    """Author model for the Book API"""
+    name = models.CharField(max_length=100)
+    birth_date = models.DateField(null=True, blank=True)
+    email = models.EmailField(unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
     def __str__(self):
         return self.name
-    
+
     class Meta:
-        verbose_name = "Author"
-        verbose_name_plural = "Authors"
         ordering = ['name']
 
-
 class Book(models.Model):
-    """
-    Book model representing individual books.
+    """Book model with comprehensive fields for API operations"""
+    GENRE_CHOICES = [
+        ('fiction', 'Fiction'),
+        ('non_fiction', 'Non-Fiction'),
+        ('mystery', 'Mystery'),
+        ('romance', 'Romance'),
+        ('sci_fi', 'Science Fiction'),
+        ('fantasy', 'Fantasy'),
+        ('biography', 'Biography'),
+        ('history', 'History'),
+    ]
     
-    This model stores book information and establishes a many-to-one
-    relationship with the Author model. Each book belongs to exactly
-    one author, but an author can have multiple books.
-    
-    Fields:
-        title (str): The title of the book
-        publication_year (int): Year the book was published
-        author (ForeignKey): Reference to the Author who wrote this book
-    """
-    title = models.CharField(
-        max_length=200,
-        help_text="Title of the book"
-    )
-    publication_year = models.IntegerField(
-        help_text="Year the book was published"
-    )
-    author = models.ForeignKey(
-        Author,
-        on_delete=models.CASCADE,
-        related_name='books',  # This allows reverse lookup: author.books.all()
-        help_text="Author who wrote this book"
-    )
-    
+    title = models.CharField(max_length=200)
+    author = models.ForeignKey(Author, on_delete=models.CASCADE, related_name='books')
+    isbn = models.CharField(max_length=13, unique=True)
+    publication_date = models.DateField()
+    genre = models.CharField(max_length=20, choices=GENRE_CHOICES)
+    price = models.DecimalField(max_digits=8, decimal_places=2)
+    description = models.TextField(blank=True)
+    pages = models.PositiveIntegerField()
+    is_available = models.BooleanField(default=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
     def __str__(self):
-        return f"{self.title} ({self.publication_year})"
-    
+        return f"{self.title} by {self.author.name}"
+
     class Meta:
-        verbose_name = "Book"
-        verbose_name_plural = "Books"
-        ordering = ['-publication_year', 'title']
-        # Ensure no duplicate books for the same author
-        unique_together = ['title', 'author']
+        ordering = ['-created_at', 'title']
+        indexes = [
+            models.Index(fields=['title']),
+            models.Index(fields=['author']),
+            models.Index(fields=['genre']),
+        ]
