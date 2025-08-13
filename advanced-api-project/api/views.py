@@ -1,12 +1,14 @@
-from rest_framework import generics, status, permissions
+from rest_framework import generics, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticated, AllowAny
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters
 from django.shortcuts import get_object_or_404
 from .models import Book, Author
 from .serializers import BookSerializer, BookCreateUpdateSerializer, AuthorSerializer
 from .permissions import IsOwnerOrReadOnly  # Custom permission only
+
 
 class BookListView(generics.ListAPIView):
     """
@@ -15,12 +17,13 @@ class BookListView(generics.ListAPIView):
     """
     queryset = Book.objects.select_related('author', 'created_by').all()
     serializer_class = BookSerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [AllowAny]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['genre', 'author', 'is_available']
     search_fields = ['title', 'description', 'author__name']
     ordering_fields = ['title', 'publication_date', 'price', 'created_at']
     ordering = ['-created_at']  # Default ordering
+
 
 class BookDetailView(generics.RetrieveAPIView):
     """
@@ -29,7 +32,8 @@ class BookDetailView(generics.RetrieveAPIView):
     """
     queryset = Book.objects.select_related('author', 'created_by').all()
     serializer_class = BookSerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [AllowAny]
+
 
 class BookCreateView(generics.CreateAPIView):
     """
@@ -38,7 +42,7 @@ class BookCreateView(generics.CreateAPIView):
     """
     queryset = Book.objects.all()
     serializer_class = BookCreateUpdateSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAuthenticated]
     
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user)
@@ -55,6 +59,7 @@ class BookCreateView(generics.CreateAPIView):
             headers=headers
         )
 
+
 class BookUpdateView(generics.UpdateAPIView):
     """
     PUT/PATCH /api/books/{id}/
@@ -62,7 +67,7 @@ class BookUpdateView(generics.UpdateAPIView):
     """
     queryset = Book.objects.all()
     serializer_class = BookCreateUpdateSerializer
-    permission_classes = [permissions.IsAuthenticated, IsOwnerOrReadOnly]
+    permission_classes = [IsAuthenticated, IsOwnerOrReadOnly]
     
     def update(self, request, *args, **kwargs):
         partial = kwargs.pop('partial', False)
@@ -76,13 +81,14 @@ class BookUpdateView(generics.UpdateAPIView):
             'book': book_serializer.data
         })
 
+
 class BookDeleteView(generics.DestroyAPIView):
     """
     DELETE /api/books/{id}/
     Delete a book entry.
     """
     queryset = Book.objects.all()
-    permission_classes = [permissions.IsAuthenticated, IsOwnerOrReadOnly]
+    permission_classes = [IsAuthenticated, IsOwnerOrReadOnly]
     
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -103,37 +109,41 @@ class BookDeleteView(generics.DestroyAPIView):
                 'soft_delete': False
             }, status=status.HTTP_204_NO_CONTENT)
 
+
 # Additional views
 class MyBooksView(generics.ListAPIView):
     """GET /api/my-books/ - Books created by the current user"""
     serializer_class = BookSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAuthenticated]
     
     def get_queryset(self):
         return Book.objects.filter(created_by=self.request.user).select_related('author')
 
+
 class BooksByGenreView(generics.ListAPIView):
     """GET /api/books/genre/{genre}/ - Books filtered by genre"""
     serializer_class = BookSerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [AllowAny]
     
     def get_queryset(self):
         genre = self.kwargs['genre']
         return Book.objects.filter(genre=genre).select_related('author', 'created_by')
+
 
 # Author views
 class AuthorListView(generics.ListAPIView):
     """GET /api/authors/ - List all authors"""
     queryset = Author.objects.all()
     serializer_class = AuthorSerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [AllowAny]
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['name', 'email']
     ordering_fields = ['name', 'created_at']
     ordering = ['name']
 
+
 class AuthorDetailView(generics.RetrieveAPIView):
     """GET /api/authors/{id}/ - Get author details"""
     queryset = Author.objects.all()
     serializer_class = AuthorSerializer
-    permission_classes = [permissions.AllowAny]  
+    permission_classes = [AllowAny]
