@@ -1,28 +1,51 @@
-from rest_framework import generics, status, filters
+from django_filters import rest_framework as filters  # Add this import
+from rest_framework import generics, status, permissions
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticated, AllowAny
-from django_filters.rest_framework import DjangoFilterBackend
+from django_filters.rest_framework import DjangoFilterBackend  # Keep this import
+from rest_framework import filters
 from django.shortcuts import get_object_or_404
 from .models import Book, Author
 from .serializers import BookSerializer, BookCreateUpdateSerializer, AuthorSerializer
-from .permissions import IsOwnerOrReadOnly  # Custom permission only
-
+from .permissions import IsOwnerOrReadOnly
 
 class BookListView(generics.ListAPIView):
     """
     GET /api/books/
     Retrieve all books with filtering, searching, and ordering capabilities.
+    
+    Filtering Examples:
+    - /api/books/?genre=fiction
+    - /api/books/?author=2&is_available=true
+    - /api/books/?publication_year__gte=2020
+    
+    Searching Examples:
+    - /api/books/?search=dune
+    
+    Ordering Examples:
+    - /api/books/?ordering=title
+    - /api/books/?ordering=-publication_date
     """
     queryset = Book.objects.select_related('author', 'created_by').all()
     serializer_class = BookSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [permissions.AllowAny]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ['genre', 'author', 'is_available']
+    
+    # Filter configuration
+    filterset_fields = {
+        'title': ['exact', 'icontains'],
+        'author': ['exact'],
+        'genre': ['exact'],
+        'publication_year': ['exact', 'gte', 'lte'],
+        'is_available': ['exact'],
+    }
+    
+    # Search configuration
     search_fields = ['title', 'description', 'author__name']
+    
+    # Ordering configuration
     ordering_fields = ['title', 'publication_date', 'price', 'created_at']
     ordering = ['-created_at']  # Default ordering
-
 
 class BookDetailView(generics.RetrieveAPIView):
     """
