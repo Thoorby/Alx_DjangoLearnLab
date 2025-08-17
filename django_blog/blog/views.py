@@ -7,6 +7,8 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm
 from .forms import CustomUserCreationForm, CommentForm
 from .models import Post, Comment
+from django.db.models import Q
+from taggit.models import Tag
 
 # --------------------
 # Post CRUD Views
@@ -25,6 +27,7 @@ class PostDetailView(DetailView):
 class PostCreateView(LoginRequiredMixin, CreateView):
     model = Post
     fields = ["title", "content"]
+    form_class = PostForm
     template_name = "blog/post_form.html"
 
     def form_valid(self, form):
@@ -34,6 +37,7 @@ class PostCreateView(LoginRequiredMixin, CreateView):
 class PostUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     model = Post
     fields = ["title", "content"]
+    form_class = PostForm
     template_name = "blog/post_form.html"
 
     def test_func(self):
@@ -126,3 +130,18 @@ class CommentDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
 
     def get_success_url(self):
         return reverse_lazy("post-detail", kwargs={"pk": self.object.post.id})
+
+def search_posts(request):
+    query = request.GET.get("q")
+    results = Post.objects.filter(
+        Q(title__icontains=query) |
+        Q(content__icontains=query) |
+        Q(tags__name__icontains=query)
+    ).distinct()
+    return render(request, "blog/search_results.html", {"posts": results, "query": query})
+
+def posts_by_tag(request, tag_slug):
+    tag = get_object_or_404(Tag, slug=tag_slug)
+    posts = Post.objects.filter(tags__slug=tag_slug)
+    return render(request, "blog/post_list.html", {"posts": posts, "tag": tag})
+
