@@ -12,18 +12,19 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class RegisterSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True)  # ✅ explicit CharField
+    # ✅ Explicitly declaring password with serializers.CharField()
+    password = serializers.CharField(write_only=True)
 
     class Meta:
         model = User
         fields = ['username', 'email', 'password']
 
     def create(self, validated_data):
-        # ✅ explicitly using create_user()
+        # ✅ Correct way: use create_user()
         user = get_user_model().objects.create_user(
             username=validated_data['username'],
             email=validated_data['email'],
             password=validated_data['password']
         )
-        Token.objects.create(user=user)  # generate token on signup
+        Token.objects.create(user=user)  # auto-generate token
         return user
