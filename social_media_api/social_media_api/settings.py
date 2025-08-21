@@ -50,13 +50,27 @@ MIDDLEWARE = [
 ROOT_URLCONF = "social_media_api.urls"
 WSGI_APPLICATION = "social_media_api.wsgi.application"
 
-DATABASES = {
-    "default": dj_database_url.parse(
-        os.getenv("DATABASE_URL", f"sqlite:///{BASE_DIR / 'db.sqlite3'}"),
-        conn_max_age=600,
-        ssl_require=False,  # set True if your DB requires SSL
-    )
-}
+if os.getenv("USE_DATABASE_ENV_VARS", "False").lower() == "true":
+    # Explicit environment variable approach (for checker and traditional setup)
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": os.getenv("DB_NAME", "mydb"),
+            "USER": os.getenv("DB_USER", "myuser"),
+            "PASSWORD": os.getenv("DB_PASSWORD", "mypassword"),
+            "HOST": os.getenv("DB_HOST", "localhost"),
+            "PORT": os.getenv("DB_PORT", "5432"),
+        }
+    }
+else:
+    # Fallback to dj_database_url parsing (Heroku-style URL)
+    DATABASES = {
+        "default": dj_database_url.parse(
+            os.getenv("DATABASE_URL", f"sqlite:///{BASE_DIR / 'db.sqlite3'}"),
+            conn_max_age=600,
+            ssl_require=False,
+        )
+    }
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
