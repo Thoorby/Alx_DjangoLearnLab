@@ -1,10 +1,8 @@
-from rest_framework import viewsets, permissions
+from rest_framework import viewsets, permissions, generics, status
+from rest_framework.response import Response
 from .models import Post, Comment, Like
 from .serializers import PostSerializer, CommentSerializer
 from django.contrib.auth import get_user_model
-from rest_framework import generics, permissions, status
-from rest_framework.response import Response
-from django.shortcuts import get_object_or_404
 from notifications.models import Notification
 
 # Custom permission to allow only owners to edit/delete
@@ -16,6 +14,7 @@ class IsOwnerOrReadOnly(permissions.BasePermission):
         # Otherwise, only the owner/author can modify
         return obj.author == request.user
 
+
 class PostViewSet(viewsets.ModelViewSet):
     queryset = Post.objects.all()  
     serializer_class = PostSerializer
@@ -23,6 +22,7 @@ class PostViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
+
 
 class CommentViewSet(viewsets.ModelViewSet):
     queryset = Comment.objects.all()  
@@ -32,7 +32,9 @@ class CommentViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
 
+
 User = get_user_model()
+
 
 class FeedView(generics.ListAPIView):
     """
@@ -43,31 +45,16 @@ class FeedView(generics.ListAPIView):
     serializer_class = PostSerializer
 
     def get_queryset(self):
-        u = self.request.user
-        following_ids = u.following.values_list('id', flat=True)
-
-        # Followed users only:
-        qs = Post.objects.filter(author_id__in=following_ids)
-
-        # If you also want to include the user's own posts in the feed, uncomment:
-        # qs = Post.objects.filter(author_id__in=list(following_ids) + [u.id])
-
-        return qs.select_related('author').order_by('-created_at')
-
-class FeedView(generics.ListAPIView):
-    permission_classes = [permissions.IsAuthenticated]
-    serializer_class = PostSerializer
-
-    def get_queryset(self):
         user = self.request.user
         following_users = user.following.all()
-        return Post.objects.filter(author__in=following_users).order_by('-created_at')  
+        return Post.objects.filter(author__in=following_users).order_by('-created_at')
+
 
 class LikePostView(generics.GenericAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, pk):
-        post = get_object_or_404(Post, pk=pk)
+        post = generics.get_object_or_404(Post, pk=pk)  # ✅ DRF’s get_object_or_404
         like, created = Like.objects.get_or_create(user=request.user, post=post)
 
         if not created:
@@ -89,7 +76,7 @@ class UnlikePostView(generics.GenericAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, pk):
-        post = get_object_or_404(Post, pk=pk)
+        post = generics.get_object_or_404(Post, pk=pk)  # ✅ DRF’s get_object_or_404
         like = Like.objects.filter(user=request.user, post=post).first()
         if not like:
             return Response({"detail": "You haven't liked this post."}, status=status.HTTP_400_BAD_REQUEST)
